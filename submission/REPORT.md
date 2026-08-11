@@ -4,7 +4,7 @@
 
 - Tên nhóm: Ngan Tạ
 - Repository URL: https://github.com/kinmgan/K4-DAY13-2A202601258
-- Commit SHA cuối: 6be96e9
+- Commit SHA cuối: 3d16b5e
 - Thành viên và vai trò:
 
 | STT | Họ tên | MSSV | Vai trò |
