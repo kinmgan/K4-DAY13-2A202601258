@@ -14,6 +14,22 @@
 - Số PII leak còn lại:
 - Link/đường dẫn dashboard:
 
+(.venv) PS C:\Users\ngant\ai_act_lab\lab_13\K4-DAY13-2A202601258> python scripts/validate_logs.py     
+--- Lab Verification Results ---
+Total log records analyzed: 42
+Records with missing required fields: 20
+Records with missing enrichment (context): 20
+Unique correlation IDs found: 10
+Potential PII leaks detected: 0
+
+--- Grading Scorecard (Estimates) ---
+- [FAILED] Missing required fields (ts, level, etc.)
++ [PASSED] Correlation ID propagation
+- [FAILED] Log enrichment (missing user_id_hash, etc.)
++ [PASSED] PII scrubbing
+
+Estimated Score: 50/100
+
 ## 3. Logging và tracing
 
 - Evidence correlation ID:
