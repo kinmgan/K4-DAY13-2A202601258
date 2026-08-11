@@ -39,6 +39,12 @@ Sau khi cài dependencies và tạo dữ liệu log, chạy:
 streamlit run dashboard.py
 ```
 
+Hoặc khởi động cả API và dashboard bằng một lệnh PowerShell:
+
+```powershell
+.\scripts\run_demo.ps1
+```
+
 Mở địa chỉ Streamlit hiển thị trong terminal. Dashboard đọc `data/logs.jsonl`, lọc cửa sổ 60 phút và hiển thị sáu panel đúng `config/dashboard.yaml`.
 
 ## Cách kiểm tra runtime
