@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from . import metrics
 from .mock_llm import FakeLLM
 from .mock_rag import retrieve
-from .pii import hash_user_id, summarize_text
+from .pii import hash_user_id, scrub_text, summarize_text
 from .prompt_management import resolve_prompt
 from .tracing import get_langfuse_client, observe, tracing_enabled
 
@@ -26,11 +26,27 @@ class LabAgent:
         self.model = model
         self.llm = FakeLLM(model=model)
 
-    @observe(as_type="generation", capture_input=False, capture_output=False)
+    @observe(name="chat-response", as_type="agent", capture_input=False, capture_output=False)
     def run(self, user_id: str, feature: str, session_id: str, message: str) -> AgentResult:
         started = time.perf_counter()
-        docs = retrieve(message)
         langfuse_client = get_langfuse_client()
+        safe_message = scrub_text(message)
+
+        # Keep retrieval and generation as siblings beneath the chat-turn agent.
+        # The explicit I/O below avoids the decorator capturing raw request arguments.
+        if tracing_enabled() and callable(
+            getattr(langfuse_client, "start_as_current_observation", None)
+        ):
+            with langfuse_client.start_as_current_observation(
+                name="retrieve-context",
+                as_type="retriever",
+                input={"query": safe_message},
+            ) as retrieval:
+                docs = retrieve(message)
+                retrieval.update(output={"documents": [scrub_text(doc) for doc in docs]})
+        else:
+            docs = retrieve(message)
+
         prompt = resolve_prompt(
             langfuse_client,
             feature=feature,
@@ -38,7 +54,41 @@ class LabAgent:
             message=message,
             enabled=tracing_enabled(),
         )
-        response = self.llm.generate(prompt.text)
+        if tracing_enabled() and callable(
+            getattr(langfuse_client, "start_as_current_observation", None)
+        ):
+            with langfuse_client.start_as_current_observation(
+                name="generate-response",
+                as_type="generation",
+                model=self.model,
+                input=[{"role": "user", "content": safe_message}],
+            ) as generation:
+                response = self.llm.generate(prompt.text)
+                generation.update(
+                    output={"role": "assistant", "content": scrub_text(response.text)},
+                    metadata={
+                        "doc_count": len(docs),
+                        "prompt_name": prompt.name,
+                        "prompt_label": prompt.label,
+                        "prompt_version": prompt.version,
+                        "prompt_source": prompt.source,
+                        "prompt_fetch_error": prompt.fetch_error,
+                    },
+                    usage_details={
+                        "input_tokens": response.usage.input_tokens,
+                        "output_tokens": response.usage.output_tokens,
+                    },
+                    cost_details={
+                        "input": self._estimate_cost(response.usage.input_tokens, 0),
+                        "output": self._estimate_cost(0, response.usage.output_tokens),
+                        "total": self._estimate_cost(
+                            response.usage.input_tokens, response.usage.output_tokens
+                        ),
+                    },
+                    prompt=prompt.managed_prompt,
+                )
+        else:
+            response = self.llm.generate(prompt.text)
         quality_score = self._heuristic_quality(message, response.text, docs)
         latency_ms = int((time.perf_counter() - started) * 1000)
         cost_usd = self._estimate_cost(response.usage.input_tokens, response.usage.output_tokens)
@@ -47,6 +97,8 @@ class LabAgent:
             user_id=hash_user_id(user_id),
             session_id=session_id,
             tags=["lab", feature, self.model],
+            input={"message": safe_message},
+            output={"answer": scrub_text(response.text)},
             metadata={
                 "prompt_name": prompt.name,
                 "prompt_label": prompt.label,
@@ -54,24 +106,28 @@ class LabAgent:
                 "prompt_source": prompt.source,
             },
         )
-        langfuse_client.update_current_generation(
-            model=self.model,
-            metadata={
-                "doc_count": len(docs),
-                "query_preview": summarize_text(message),
-                "prompt_name": prompt.name,
-                "prompt_label": prompt.label,
-                "prompt_version": prompt.version,
-                "prompt_source": prompt.source,
-                "prompt_fetch_error": prompt.fetch_error,
-            },
-            usage_details={
-                "prompt_tokens": response.usage.input_tokens,
-                "completion_tokens": response.usage.output_tokens,
-            },
-            cost_details={"total": cost_usd},
-            prompt=prompt.managed_prompt,
-        )
+        # Older/offline adapters do not expose the context-manager API. Preserve a
+        # complete generation update for them, while current Langfuse receives the
+        # richer nested generation above.
+        if not callable(getattr(langfuse_client, "start_as_current_observation", None)):
+            langfuse_client.update_current_generation(
+                model=self.model,
+                metadata={
+                    "doc_count": len(docs),
+                    "query_preview": summarize_text(message),
+                    "prompt_name": prompt.name,
+                    "prompt_label": prompt.label,
+                    "prompt_version": prompt.version,
+                    "prompt_source": prompt.source,
+                    "prompt_fetch_error": prompt.fetch_error,
+                },
+                usage_details={
+                    "input_tokens": response.usage.input_tokens,
+                    "output_tokens": response.usage.output_tokens,
+                },
+                cost_details={"total": cost_usd},
+                prompt=prompt.managed_prompt,
+            )
 
         metrics.record_request(
             latency_ms=latency_ms,
