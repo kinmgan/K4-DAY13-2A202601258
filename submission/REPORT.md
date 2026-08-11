@@ -30,6 +30,22 @@ Potential PII leaks detected: 0
 
 Estimated Score: 50/100
 
+(.venv) PS C:\Users\ngant\ai_act_lab\lab_13\K4-DAY13-2A202601258> python scripts/validate_logs.py     
+--- Lab Verification Results ---
+Total log records analyzed: 21
+Records with missing required fields: 0
+Records with missing enrichment (context): 0
+Unique correlation IDs found: 10
+Potential PII leaks detected: 0
+
+--- Grading Scorecard (Estimates) ---
++ [PASSED] Basic JSON schema
++ [PASSED] Correlation ID propagation
++ [PASSED] Log enrichment
++ [PASSED] PII scrubbing
+
+Estimated Score: 100/100
+
 ## 3. Logging và tracing
 
 - Evidence correlation ID:
