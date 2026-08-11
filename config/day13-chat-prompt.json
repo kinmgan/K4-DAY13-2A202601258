@@ -1,0 +1,14 @@
+{
+  "name": "day13-chat",
+  "type": "text",
+  "versions": [
+    {
+      "prompt": "You are a helpful AI assistant helping the user with a specific feature.\n\nFeature: {{feature}}\n\nRelated Documentation:\n{{docs}}\n\nUser Message: {{message}}\n\nPlease provide a clear and concise response based on the documentation.",
+      "labels": ["baseline", "production"]
+    },
+    {
+      "prompt": "You are an expert AI assistant tasked with assisting the user regarding the following feature: {{feature}}.\n\nPlease strictly refer to the provided documentation below to answer the user's message.\n\n<docs>\n{{docs}}\n</docs>\n\n<user_message>\n{{message}}\n</user_message>\n\nProvide a detailed, step-by-step response.",
+      "labels": ["candidate"]
+    }
+  ]
+}

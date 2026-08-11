@@ -32,6 +32,13 @@ async def startup() -> None:
     )
 
 
+@app.on_event("shutdown")
+async def shutdown() -> None:
+    from .tracing import get_langfuse_client
+    get_langfuse_client().flush()
+    log.info("app_shutdown", service=os.getenv("APP_NAME", "day13-observability-lab"))
+
+
 @app.get("/health")
 async def health() -> dict:
     return {"ok": True, "tracing_enabled": tracing_enabled(), "incidents": status()}
