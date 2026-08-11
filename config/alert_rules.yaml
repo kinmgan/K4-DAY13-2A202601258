@@ -1,19 +1,19 @@
 alerts:
-  - name: TODO_alert_1
-    severity: TODO
-    condition: TODO
+  - name: High chat latency
+    severity: warning
+    condition: P95 chat latency exceeds 3000 ms for 5 minutes
     type: symptom-based
-    owner: TODO
+    owner: Dashboard, SLO & Alert owner
     runbook: docs/alerts.md#alert-1
-  - name: TODO_alert_2
-    severity: TODO
-    condition: TODO
+  - name: Elevated chat error rate
+    severity: critical
+    condition: Chat error rate exceeds 2 percent for 5 minutes
     type: symptom-based
-    owner: TODO
+    owner: Dashboard, SLO & Alert owner
     runbook: docs/alerts.md#alert-2
-  - name: TODO_alert_3
-    severity: TODO
-    condition: TODO
+  - name: Daily LLM cost budget exceeded
+    severity: warning
+    condition: Total LLM cost exceeds 2.5 USD in the current day
     type: symptom-based
-    owner: TODO
+    owner: Dashboard, SLO & Alert owner
     runbook: docs/alerts.md#alert-3

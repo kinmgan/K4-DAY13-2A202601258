@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 # Load env before importing langfuse so the global client picks up the keys
 load_dotenv()
-if "LANGFUSE_BASE_URL" in os.environ and "LANGFUSE_HOST" not in os.environ:
+if os.getenv("LANGFUSE_BASE_URL") and not os.getenv("LANGFUSE_HOST"):
     os.environ["LANGFUSE_HOST"] = os.environ["LANGFUSE_BASE_URL"]
 
 try:
