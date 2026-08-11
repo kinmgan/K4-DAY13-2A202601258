@@ -13,7 +13,7 @@ from .metrics import record_error, snapshot
 from .middleware import CorrelationIdMiddleware
 from .pii import hash_user_id, summarize_text
 from .schemas import ChatRequest, ChatResponse
-from .tracing import tracing_enabled
+from .tracing import get_langfuse_client, tracing_enabled
 
 configure_logging()
 log = get_logger()
@@ -34,7 +34,6 @@ async def startup() -> None:
 
 @app.on_event("shutdown")
 async def shutdown() -> None:
-    from .tracing import get_langfuse_client
     get_langfuse_client().flush()
     log.info("app_shutdown", service=os.getenv("APP_NAME", "day13-observability-lab"))
 
@@ -64,6 +63,15 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
         service="api",
         payload={"message_preview": summarize_text(body.message)},
     )
+    langfuse_client = get_langfuse_client()
+    if tracing_enabled():
+        langfuse_client.update_current_trace(
+            metadata={
+                "correlation_id": request.state.correlation_id,
+                "feature": body.feature,
+                "session_id": body.session_id,
+            }
+        )
     try:
         result = agent.run(
             user_id=body.user_id,

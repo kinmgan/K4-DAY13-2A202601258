@@ -28,7 +28,10 @@ except ImportError:  # pragma: no cover - chỉ dùng khi chưa cài requirement
 
         def update_current_generation(self, **kwargs: Any) -> None:
             return None
-            
+
+        def update_current_span(self, **kwargs: Any) -> None:
+            return None
+
         def flush(self) -> None:
             return None
 

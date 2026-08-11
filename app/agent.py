@@ -4,11 +4,15 @@ import time
 from dataclasses import dataclass
 
 from . import metrics
+from .logging_config import get_logger
 from .mock_llm import FakeLLM
 from .mock_rag import retrieve
 from .pii import hash_user_id, summarize_text
 from .prompt_management import resolve_prompt
 from .tracing import get_langfuse_client, observe, tracing_enabled
+
+
+log = get_logger()
 
 
 @dataclass
@@ -29,7 +33,19 @@ class LabAgent:
     @observe(as_type="generation", capture_input=False, capture_output=False)
     def run(self, user_id: str, feature: str, session_id: str, message: str) -> AgentResult:
         started = time.perf_counter()
+
+        retrieve_started = time.perf_counter()
         docs = retrieve(message)
+        retrieve_ms = int((time.perf_counter() - retrieve_started) * 1000)
+        log.info(
+            "context_retrieved",
+            service="rag",
+            tool_name="retrieve_context",
+            latency_ms=retrieve_ms,
+            item_count=len(docs),
+            payload={"doc_keys": [d[:40] for d in docs]},
+        )
+
         langfuse_client = get_langfuse_client()
         prompt = resolve_prompt(
             langfuse_client,
@@ -64,6 +80,7 @@ class LabAgent:
                 "prompt_version": prompt.version,
                 "prompt_source": prompt.source,
                 "prompt_fetch_error": prompt.fetch_error,
+                "retrieve_context_ms": retrieve_ms,
             },
             usage_details={
                 "prompt_tokens": response.usage.input_tokens,
