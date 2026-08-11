@@ -9,15 +9,15 @@
 
 ## 2. Kết quả kỹ thuật
 
-- Điểm `validate_logs.py`:
+- Điểm `validate_logs.py`: 100/100 (`evidence/validate-logs-result.txt`; 29 log records, 12 correlation IDs)
 - Tổng số traces:
-- Số PII leak còn lại:
+- Số PII leak còn lại: 0
 - Link/đường dẫn dashboard:
 
 ## 3. Logging và tracing
 
-- Evidence correlation ID:
-- Evidence PII redaction:
+- Evidence correlation ID: `evidence/correlation-id-headers.png`
+- Evidence PII redaction: `evidence/json-log-redacted.png`
 - Evidence trace waterfall:
 - Giải thích một span đáng chú ý:
 
